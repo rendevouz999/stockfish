@@ -3,7 +3,11 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   let token = new URLSearchParams(window.location.hash.slice(1)).get('token');
-  if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search);
+  // Keep the original capability fragment so a reload reconnects to this server session.
+  $('skip-main').addEventListener('click', () => {
+    $('main').focus();
+    $('main').scrollIntoView();
+  });
 
   const pieces = { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟', K: '♔', Q: '♕', R: '♖', B: '♗', N: '♘', P: '♙' };
   const pieceNames = { k: 'king', q: 'queen', r: 'rook', b: 'bishop', n: 'knight', p: 'pawn' };
@@ -288,5 +292,5 @@
 
   render();
   if (token) poll();
-  else message('connection', 'Open the original player URL containing #token=… to connect. The token is removed from the address bar and is not saved in browser storage.', 'error');
+  else message('connection', 'Open the original player URL containing #token=… to connect. Keep the full private link in the address bar; refreshing it reconnects while this server is running.', 'error');
 })();

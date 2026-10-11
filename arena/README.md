@@ -23,7 +23,9 @@ The server binds **127.0.0.1 only**, by default on port **8124**, and prints two
 
 Open the observer, choose player color, Stockfish skill 0–20 and engine move budget, and press **Start game**. Open the player link, click a piece and its legal destination. Promotion requires an explicit queen, rook, bishop or knight selection. The player can only submit its own legal moves. The opponent is real bundled Stockfish running in a separate Node process on the same computer.
 
-Links last for one server session. Each page removes its URL fragment and holds its token only in memory. Reloading requires reopening the original link from the console. Do not put capability links in public screenshots, reports, chat transcripts or Git.
+Links last for one server session. Each page retains its private capability in the URL fragment so refreshing the same tab reconnects without copying a link from the console. Treat the complete address as a credential: browser history may retain it. The app does not add cookies, localStorage, sessionStorage, or token files. Restarting the server invalidates old links. Do not put capability links in public screenshots, reports, chat transcripts or Git.
+
+The observer provides an authenticated **Open Player** link for the current server session. The player capability never grants observer control. Starting another game does not require restarting the server. Use the observer game controls; reset returns to idle, while restarting a game preserves earlier evidence.
 
 Custom port or independent journal directory:
 

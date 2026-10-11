@@ -3,10 +3,15 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   let token = new URLSearchParams(window.location.hash.slice(1)).get('token');
-  if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search);
+  // Keep the original capability fragment so a reload reconnects to this server session.
+  $('skip-main').addEventListener('click', () => {
+    $('main').focus();
+    $('main').scrollIntoView();
+  });
 
   const pieces = { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟', K: '♔', Q: '♕', R: '♖', B: '♗', N: '♘', P: '♙' };
   let snapshot = null;
+  let playerUrl = null;
   let busy = false;
   let sequence = 0;
   let appliedSequence = 0;
@@ -75,6 +80,8 @@
     const unavailable = !token || !snapshot || busy;
     for (const button of document.querySelectorAll('form button, .operator-actions button')) button.disabled = unavailable;
     const state = snapshot?.state;
+    $('start-game').disabled = unavailable || !playerUrl;
+    $('restart-game').disabled = unavailable || !playerUrl || !currentGameConfig();
     $('review-game').disabled = unavailable || !state?.game_id || state.phase === 'review' || state.status === 'idle';
     $('reset-game').disabled = unavailable || !state?.game_id || state.status === 'idle';
     for (const button of $('export-form').querySelectorAll('button')) button.disabled = unavailable || !snapshot?.games?.length;
@@ -227,10 +234,32 @@
         headers: { Authorization: `Bearer ${token}`, ...(options.body ? { 'Content-Type': 'application/json' } : {}) } });
       if (response.status === 401 || response.status === 403) {
         token = null;
+        playerUrl = null;
+        $('open-player').hidden = true;
+        $('open-player').removeAttribute('href');
         throw new Error('Observer access was rejected. Reopen the current observer link supplied by the server.');
       }
       return response;
     } finally { clearTimeout(timeout); }
+  }
+
+  async function loadPlayerLink() {
+    playerUrl = null;
+    $('open-player').hidden = true;
+    $('open-player').removeAttribute('href');
+    const response = await request('/api/observer/player-link');
+    if (!response.ok) throw new Error(`Player link request failed (${response.status}).`);
+    const data = await response.json();
+    if (!token) return; // Another in-flight request may already have revoked this page's access.
+    if (typeof data.player_url !== 'string' || !/^\/player#token=[A-Za-z0-9_-]{43}$/.test(data.player_url)) throw new Error('Invalid player link returned by the server.');
+    playerUrl = data.player_url;
+    $('open-player').href = playerUrl;
+    $('open-player').hidden = false;
+    setControls();
+  }
+
+  function currentGameConfig() {
+    return snapshot?.games?.find(game => game.game_id === snapshot.state.game_id)?.config;
   }
 
   async function refresh() {
@@ -238,6 +267,7 @@
     const response = await request('/api/observer/state');
     if (!response.ok) throw new Error(`State request failed (${response.status}).`);
     acceptSnapshot(await response.json(), requestSequence);
+    if (!playerUrl) await loadPlayerLink();
     message('connection', '');
   }
 
@@ -260,8 +290,8 @@
     try {
       const response = await request(path, { method: 'POST', body: JSON.stringify(body) });
       const data = await response.json();
+      if (response.status >= 500 || typeof data.ok !== 'boolean') throw new Error('The server could not confirm the operation.');
       if (!response.ok || data.ok === false) {
-        if (response.status >= 500) throw new Error('The server could not confirm the operation.');
         const explanation = [data.code, data.error].filter(Boolean).map(readable).join(': ') || `HTTP ${response.status}`;
         message('action-message', `Operation was not accepted: ${explanation}.`, 'error');
         return;
@@ -278,6 +308,32 @@
       setControls();
       renderStatus(snapshot?.state);
     }
+    return confirmed;
+  }
+
+  async function startGame(body) {
+    if (!token || busy || !playerUrl) return;
+    message('player-message', '');
+    // Reserve the tab during the click gesture; sever its opener before any navigation.
+    let playerWindow = null;
+    try {
+      playerWindow = window.open('about:blank', '_blank');
+      if (playerWindow) playerWindow.opener = null;
+    } catch {
+      try { playerWindow?.close(); } catch {}
+      playerWindow = null;
+    }
+    const confirmed = await operate('/api/observer/start', body, 'Training game started.');
+    if (!confirmed) {
+      try { playerWindow?.close(); } catch {}
+      return;
+    }
+    try {
+      if (!playerWindow || playerWindow.closed || !playerUrl) throw new Error('Player tab unavailable');
+      playerWindow.location.replace(playerUrl);
+    } catch {
+      message('player-message', 'Game started. Choose Buka Player to open the board if the player tab was blocked or closed.');
+    }
   }
 
   $('start-form').addEventListener('submit', (event) => {
@@ -287,7 +343,13 @@
     const body = { player_color: $('player-color').value, skill_level: Number($('skill-level').value), movetime_ms: Number($('movetime').value) };
     if ($('initial-fen').value.trim()) body.initial_fen = $('initial-fen').value.trim();
     if ($('training-label').value.trim()) body.training_label = $('training-label').value.trim();
-    operate('/api/observer/start', body, 'Training game started.');
+    return startGame(body);
+  });
+
+  $('restart-game').addEventListener('click', () => {
+    const config = currentGameConfig();
+    if (busy || !token || !config || !window.confirm('Mulai ulang dengan pengaturan yang sama? Riwayat permainan tetap disimpan.')) return;
+    return startGame({ ...config });
   });
 
   $('reset-game').addEventListener('click', () => {
@@ -349,6 +411,6 @@
   if (token) poll();
   else {
     renderStatus(null);
-    message('connection', 'Open the original observer URL containing #token=… to connect. The token is removed from the address bar and is not saved in browser storage.', 'error');
+    message('connection', 'Open the original observer URL containing #token=… to connect. Keep the full private link in the address bar; refreshing it reconnects while this server is running.', 'error');
   }
 })();

@@ -9,6 +9,7 @@ All API calls require `Authorization: Bearer <matching session capability>`. Nev
 | GET `/api/player/state` | player | Current board and own legal moves |
 | POST `/api/player/move` | player | Submit an idempotent move |
 | GET `/api/observer/state` | observer | State, game summaries, full events, diagnostic |
+| GET `/api/observer/player-link` | observer | Private current player URL; never available to player or anonymous callers |
 | POST `/api/observer/start` | observer | Validate config and start a new game |
 | POST `/api/observer/reset` | observer | Preserve prior game and return to idle |
 | POST `/api/observer/review` | observer | End active game with result `*` for review |

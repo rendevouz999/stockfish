@@ -54,11 +54,11 @@ export class Arena {
     // Never unlink a pre-existing lock automatically: stale-lock recovery races with new writers.
     try { this.lockFd = openSync(this.lockPath, 'wx', 0o600); }
     catch (error) {
-      if (error.code === 'EEXIST') throw new Error('Journal lock already exists. Verify no arena process is running before manually preserving/removing this specific stale lock, or choose a new data directory.');
+      if (error.code === 'EEXIST') throw Object.assign(new Error('Journal lock already exists.'), { code: 'JOURNAL_LOCK_EXISTS', lockPath: this.lockPath });
       throw error;
     }
-    writeSync(this.lockFd, `${process.pid}\n`);
     try {
+      writeSync(this.lockFd, `${process.pid}\n`);
       if (existsSync(logPath)) {
         const content = readFileSync(logPath, 'utf8');
         if (content && !content.endsWith('\n')) throw new Error('Journal has an incomplete final line; preserve and repair the log before restarting');

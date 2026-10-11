@@ -49,6 +49,7 @@ export function createArenaServer({ dataDir = join(root, 'arena-data'), engine =
       const routes = new Map([
         ['GET /api/player/state', 'player'], ['POST /api/player/move', 'player'],
         ['GET /api/observer/state', 'observer'], ['GET /api/observer/export', 'observer'],
+        ['GET /api/observer/player-link', 'observer'],
         ['POST /api/observer/start', 'observer'], ['POST /api/observer/reset', 'observer'],
         ['POST /api/observer/review', 'observer'], ['POST /api/observer/memory/import', 'observer'],
       ]);
@@ -77,6 +78,7 @@ export function createArenaServer({ dataDir = join(root, 'arena-data'), engine =
       else if (path === '/api/player/move') {
         const result = arena.move(body); json(response, result.ok ? 200 : 409, result);
       } else if (path === '/api/observer/state') json(response, 200, arena.observerState());
+      else if (path === '/api/observer/player-link') json(response, 200, { player_url: '/player#token=' + tokens.player });
       else if (path === '/api/observer/start') json(response, 200, arena.start(body));
       else if (path === '/api/observer/reset') json(response, 200, arena.reset());
       else if (path === '/api/observer/review') json(response, 200, arena.review());
@@ -113,34 +115,61 @@ export function createArenaServer({ dataDir = join(root, 'arena-data'), engine =
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  if (Number(process.versions.node.split('.')[0]) < 20) throw new Error('Node.js 20 or newer is required. Node.js 24 LTS is recommended.');
-  let port = 8124;
-  let dataDir = join(root, 'arena-data');
-  let openBrowser = false;
-  let browser = 'brave';
-  let braveRoot = process.env.QUIET_CHESS_BRAVE_ROOT;
-  for (let i = 2; i < process.argv.length; i++) {
-    if (process.argv[i] === '--port') port = Number(process.argv[++i]);
-    else if (process.argv[i] === '--data-dir') dataDir = resolve(process.argv[++i] || '');
-    else if (process.argv[i] === '--open') openBrowser = true;
-    else if (process.argv[i] === '--browser') browser = process.argv[++i];
-    else if (process.argv[i] === '--brave-root') braveRoot = process.argv[++i];
-    else throw new Error(`Unknown argument: ${process.argv[i]}`);
-  }
-  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Port must be 1–65535');
-  if (browser !== 'brave') throw new Error('The supported auto-open browser is brave');
-  if (openBrowser && !braveRoot) throw new Error('Specify --brave-root with your existing portable Brave folder, or use start-arena-brave.cmd');
-  const app = createArenaServer({ dataDir });
-  try { await app.listen(port); }
-  catch (error) { console.error(`Arena could not start: ${error.message}`); process.exitCode = 1; }
-  if (app.port) {
+  let app;
+  try {
+    if (Number(process.versions.node.split('.')[0]) < 20) throw new Error('Node.js 20 or newer is required. Node.js 24 LTS is recommended.');
+    let port = 8124;
+    let dataDir = join(root, 'arena-data');
+    let openBrowser = false;
+    let browser = 'brave';
+    let braveRoot = process.env.QUIET_CHESS_BRAVE_ROOT;
+    for (let i = 2; i < process.argv.length; i++) {
+      if (process.argv[i] === '--port') port = Number(process.argv[++i]);
+      else if (process.argv[i] === '--data-dir') {
+        const directory = process.argv[++i];
+        if (!directory || directory.startsWith('--')) throw new Error('--data-dir requires an explicit directory');
+        dataDir = resolve(directory);
+      } else if (process.argv[i] === '--open') openBrowser = true;
+      else if (process.argv[i] === '--browser') browser = process.argv[++i];
+      else if (process.argv[i] === '--brave-root') braveRoot = process.argv[++i];
+      else throw new Error(`Unknown argument: ${process.argv[i]}`);
+    }
+    if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Port must be 1–65535');
+    if (browser !== 'brave') throw new Error('The supported auto-open browser is brave');
+    if (openBrowser && !braveRoot) throw new Error('Specify --brave-root with your existing portable Brave folder, or use start-arena-brave.cmd');
+    app = createArenaServer({ dataDir });
+    let stopping = false;
+    const stop = async () => {
+      if (stopping) return;
+      stopping = true;
+      try { await app.close(); process.exit(0); }
+      catch (error) { console.error(`Arena could not stop cleanly: ${error.message}`); process.exit(1); }
+    };
+    // Windows console close emits SIGHUP; Ctrl+Break emits SIGBREAK.
+    // Forced termination/power loss can still leave a lock and must never trigger automatic removal.
+    for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGBREAK']) process.on(signal, stop);
+    await app.listen(port);
     console.log(`\nQuiet Chess Observation Arena — local-only\nPlayer:   http://127.0.0.1:${port}/player#token=${app.tokens.player}\nObserver: http://127.0.0.1:${port}/observer#token=${app.tokens.observer}\n\nKeep the observer link and this console private from the player controller.\nJournal: ${dataDir}\nNo live Memory integration is installed. Imports remain unverified.\nCtrl+C stops the server.\n`);
-    for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => app.close().then(() => process.exit(0)));
     if (openBrowser) {
       try {
         await openBrave({ browser, braveRoot, playerUrl: `http://127.0.0.1:${port}/player#token=${app.tokens.player}`, observerUrl: `http://127.0.0.1:${port}/observer#token=${app.tokens.observer}` });
         console.log('Portable Brave launch requested with player and observer tabs. Keep the observer tab outside the player controller.');
       } catch (error) { console.error(`Browser was not opened automatically: ${error.message}\nThe arena server is still running; use the printed links manually.`); }
     }
+  } catch (error) {
+    console.error(`Arena could not start: ${error.message}`);
+    if (error.code === 'JOURNAL_LOCK_EXISTS') {
+      let pid = 'unknown';
+      try {
+        const recorded = (await readFile(error.lockPath, 'utf8')).trim();
+        if (/^[1-9][0-9]{0,9}$/.test(recorded)) pid = recorded;
+      } catch { /* An unreadable or disappearing lock still must not be replaced. */ }
+      console.error(`Lock: ${error.lockPath}\nRecorded PID: ${pid} (ownership is not verified).\nIf this arena is already running, use its existing console and tabs; Ctrl+C in that console stops it safely.\nOtherwise verify no arena uses this exact data directory, preserve the journal and lock, then rename only the confirmed stale lock before restarting once.\nNever remove an unknown/live lock or events.jsonl. See arena/README.md.`);
+    }
+    if (app) {
+      try { await app.close(); }
+      catch (closeError) { console.error(`Arena cleanup failed: ${closeError.message}`); }
+    }
+    process.exitCode = 1;
   }
 }

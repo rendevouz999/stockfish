@@ -9,12 +9,12 @@
   <script defer src="/player.js"></script>
 </head>
 <body>
-  <a class="skip-link" href="#main">Skip to board</a>
+  <button id="skip-main" class="skip-link" type="button">Skip to board</button>
   <header class="site-header">
     <div class="brand"><span aria-hidden="true">♞</span> Quiet Chess <span class="brand-suffix">Arena</span></div>
     <span class="page-role">Player</span>
   </header>
-  <main id="main" class="player-layout">
+  <main id="main" tabindex="-1" class="player-layout">
     <section class="board-section" aria-labelledby="board-heading">
       <div class="section-heading"><h1 id="board-heading">Your board</h1><span id="color-label" class="muted">Waiting for a game</span></div>
       <div id="board" class="chessboard" role="group" aria-label="Chess board" aria-describedby="board-help"></div>
@@ -34,7 +34,7 @@
         <ol id="moves" class="move-list"></ol>
         <p id="moves-empty" class="empty-note">This game’s moves will appear here.</p>
       </section>
-      <p class="caption session-note">This page keeps its access token only in memory. To reconnect after a reload, reopen the original player link supplied by the operator.</p>
+      <p class="caption session-note">Refresh reconnects while this server is running. Keep this full private URL: its #token grants player access and may remain in browser history. A server restart requires a new link.</p>
     </aside>
   </main>
   <dialog id="promotion-dialog" aria-labelledby="promotion-heading" aria-describedby="promotion-help">

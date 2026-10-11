@@ -9,12 +9,12 @@
   <script defer src="/observer.js"></script>
 </head>
 <body>
-  <a class="skip-link" href="#main">Skip to observation</a>
+  <button id="skip-main" class="skip-link" type="button">Skip to observation</button>
   <header class="site-header">
     <div class="brand"><span aria-hidden="true">♞</span> Quiet Chess <span class="brand-suffix">Arena</span></div>
     <span class="page-role">Observer &amp; operator</span>
   </header>
-  <main id="main" class="observer-layout">
+  <main id="main" tabindex="-1" class="observer-layout">
     <div class="observer-heading"><h1>Observation room</h1><p class="muted">One game at a time. Keep the evidence in view.</p></div>
     <p id="connection" class="notice" role="status" hidden></p>
     <p id="action-message" class="notice" role="status" hidden></p>
@@ -36,12 +36,16 @@
           <label>Engine move budget <span class="caption">Milliseconds, 50–2000</span><input id="movetime" name="movetime_ms" type="number" min="50" max="2000" step="1" value="200" required></label>
           <label>Training label <span class="caption">Optional</span><input id="training-label" name="training_label" type="text" maxlength="160" placeholder="e.g. rook endgame" autocomplete="off"></label>
           <details><summary>Custom starting position</summary><label>Initial FEN<textarea id="initial-fen" name="initial_fen" rows="2" spellcheck="false" placeholder="Leave empty for the standard starting position"></textarea></label></details>
-          <button id="start-game" class="button" type="submit" disabled>Start training game</button>
+          <button id="start-game" class="button" type="submit" disabled>Mulai &amp; buka Player</button>
         </form>
         <div class="button-row operator-actions">
+          <a id="open-player" class="button secondary" target="_blank" rel="noopener noreferrer" hidden>Buka Player</a>
+          <button id="restart-game" class="button secondary" type="button" disabled>Mulai ulang</button>
           <button id="review-game" class="button secondary" type="button" disabled>Enter review</button>
           <button id="reset-game" class="button secondary" type="button" disabled>Reset to idle</button>
         </div>
+        <p id="player-message" class="notice" role="status" hidden></p>
+        <p class="caption">Mulai ulang starts a new game with the current game’s recorded settings and preserves history. Buka Player opens only the playing board.</p>
         <p class="caption">Review and reset are operator actions. Review closes player input; reset ends the active session.</p>
       </section>
       <section class="diagnostic-section" aria-labelledby="diagnostic-heading">
@@ -78,7 +82,7 @@
         <details class="schema-help"><summary>Expected export fields</summary><p class="caption">Top level: schema_version (1), events. Each event: event_id, game_id, kind (retrieval, lesson_created, or lesson_applied), occurred_at (ISO timestamp), source (system and export_id). Optional: decision_id, retrieval_ids, lesson (id, version, provenance), details.</p></details>
       </section>
     </div>
-    <p class="caption session-note">Observer access is separate from player access. Tokens stay in this page’s memory. After a reload, reopen the original observer link supplied by the server.</p>
+    <p class="caption session-note">Observer access is separate from player access. Refresh reconnects while this server is running. Keep this full private URL: its #token grants operator access and may remain in browser history. A server restart requires a new link.</p>
   </main>
 </body>
 </html>
