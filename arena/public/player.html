@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Player · Quiet Chess Arena</title>
+  <link rel="stylesheet" href="/arena.css">
+  <script defer src="/player.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to board</a>
+  <header class="site-header">
+    <div class="brand"><span aria-hidden="true">♞</span> Quiet Chess <span class="brand-suffix">Arena</span></div>
+    <span class="page-role">Player</span>
+  </header>
+  <main id="main" class="player-layout">
+    <section class="board-section" aria-labelledby="board-heading">
+      <div class="section-heading"><h1 id="board-heading">Your board</h1><span id="color-label" class="muted">Waiting for a game</span></div>
+      <div id="board" class="chessboard" role="group" aria-label="Chess board" aria-describedby="board-help"></div>
+      <p id="board-help" class="caption">Select a piece, then its destination. Use arrow keys to explore the board; Enter or Space to select.</p>
+    </section>
+    <aside class="player-sidebar">
+      <section aria-labelledby="status-heading">
+        <h2 id="status-heading">Game status</h2>
+        <p id="status" class="status-line" role="status">Connecting…</p>
+        <p id="game-meta" class="caption"></p>
+        <p id="connection" class="notice" role="status" hidden></p>
+        <p id="action-message" class="notice" role="status" hidden></p>
+        <button id="retry-move" class="button" type="button" hidden>Retry the same move request</button>
+      </section>
+      <section class="history-section" aria-labelledby="history-heading">
+        <div class="section-heading"><h2 id="history-heading">Move history</h2><span class="caption">SAN</span></div>
+        <ol id="moves" class="move-list"></ol>
+        <p id="moves-empty" class="empty-note">This game’s moves will appear here.</p>
+      </section>
+      <p class="caption session-note">This page keeps its access token only in memory. To reconnect after a reload, reopen the original player link supplied by the operator.</p>
+    </aside>
+  </main>
+  <dialog id="promotion-dialog" aria-labelledby="promotion-heading" aria-describedby="promotion-help">
+    <h2 id="promotion-heading">Choose a promotion</h2>
+    <p id="promotion-help" class="caption">Choose the piece before sending your move.</p>
+    <div class="promotion-options">
+      <button type="button" data-promotion="q"><span class="promotion-symbol" aria-hidden="true">♕</span>Queen</button>
+      <button type="button" data-promotion="r"><span class="promotion-symbol" aria-hidden="true">♖</span>Rook</button>
+      <button type="button" data-promotion="b"><span class="promotion-symbol" aria-hidden="true">♗</span>Bishop</button>
+      <button type="button" data-promotion="n"><span class="promotion-symbol" aria-hidden="true">♘</span>Knight</button>
+    </div>
+    <button id="cancel-promotion" class="button secondary" type="button">Cancel</button>
+  </dialog>
+</body>
+</html>

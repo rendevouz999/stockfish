@@ -1,11 +1,11 @@
 {
   "name": "quiet-chess",
   "version": "1.0.0",
-  "description": "Quiet Chess — play Stockfish and analyse games entirely in your browser. No account, no upload, no record. Fully static, no backend.",
-  "homepage": "https://solid-apps.github.io/stockfish/",
+  "description": "Quiet Chess: original static browser chess plus a local observation arena with server-side Stockfish, durable game telemetry, and separate player/operator roles.",
+  "homepage": "https://github.com/rendevouz999/stockfish#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/solid-apps/stockfish.git"
+    "url": "git+https://github.com/rendevouz999/stockfish.git"
   },
   "license": "GPL-3.0",
   "type": "commonjs",
@@ -16,5 +16,13 @@
   },
   "devDependencies": {
     "puppeteer-core": "^25.3.0"
+  },
+  "scripts": {
+    "arena": "node arena/server.mjs",
+    "test": "node --test",
+    "test:arena": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

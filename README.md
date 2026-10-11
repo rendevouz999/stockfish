@@ -11,6 +11,25 @@ and can be hosted on GitHub Pages. Games you paste or play never leave your
 machine: the engine runs locally, shared games travel as plain PGN in the URL,
 and nothing is stored anywhere.
 
+## Local observation arena (separate entry)
+
+Fork of [solid-apps/stockfish](https://github.com/solid-apps/stockfish).
+This fork adds a no-VM, localhost arena with a separate player board and
+operator timeline, server-authoritative rules, server-side Stockfish, durable
+event logs and explicitly unverified external Memory imports. It preserves
+the original static application below. **No live Agent Core Memory bridge is
+installed**, and the arena is not an OS sandbox.
+
+With Node.js 20+ (24 LTS recommended), run `npm test`, then `npm run arena`
+or `start-arena.cmd` on Windows. `start-arena-brave.cmd` additionally opens
+your existing portable Brave from its verified default folder, or prompts
+for the folder if needed. No `npm install`
+is needed for this entry.
+Use the separate capability links printed in the console. See the
+[arena guide](arena/README.md), [API](arena/API.md),
+[Memory schema](arena/MEMORY-SCHEMA.md), and
+[Windows/RDC handoff](docs/RDC-WINDOWS-HANDOFF.md).
+
 ## Run locally
 
 Any static file server works:

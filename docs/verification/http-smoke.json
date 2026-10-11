@@ -1,0 +1,76 @@
+{
+  "status": "PASS",
+  "coverage": "HTTP/in-process server only. No browser UI, screenshots, Windows, or live Memory tested.",
+  "checks": [
+    {
+      "name": "HTTP start -> e2e4 -> real Stockfish response",
+      "pass": true,
+      "detail": [
+        {
+          "san": "e4",
+          "uci": "e2e4",
+          "actor": "player"
+        },
+        {
+          "san": "c5",
+          "uci": "c7c5",
+          "actor": "engine"
+        }
+      ]
+    },
+    {
+      "name": "UTC timestamps and separate player/engine durations",
+      "pass": true,
+      "detail": {
+        "eventCount": 10,
+        "readyToActionMs": 15.81350400019437,
+        "engineWallMs": 505.5539730004966
+      }
+    },
+    {
+      "name": "role isolation and no hints/eval/observer payload in player state",
+      "pass": true,
+      "detail": [
+        "game_id",
+        "generation",
+        "version",
+        "decision_id",
+        "phase",
+        "status",
+        "turn",
+        "player_color",
+        "fen",
+        "ply",
+        "moves",
+        "legal_moves",
+        "result",
+        "reason"
+      ]
+    },
+    {
+      "name": "JSON/JSONL equality, PGN replay to exact FEN, capability-token absence in exports",
+      "pass": true
+    },
+    {
+      "name": "synthetic-only memory import is unverified and idempotent, never a learning claim",
+      "pass": true
+    },
+    {
+      "name": "review closes player actions; reset keeps recorded games",
+      "pass": true
+    },
+    {
+      "name": "underpromotion accepted with explicit choice and terminal insufficient-material result",
+      "pass": true
+    },
+    {
+      "name": "reset during 2000ms real Stockfish search prevents late engine move",
+      "pass": true
+    },
+    {
+      "name": "old-generation move cannot resurrect reset game",
+      "pass": true
+    }
+  ],
+  "fixture_notice": "Synthetic local QA data only. This is not a user Memory or learning evaluation."
+}
